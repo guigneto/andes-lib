@@ -1,0 +1,117 @@
+name: Publish to npm
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Permite acionar o fluxo de trabalho manualmente na interface do GitHub
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04 # O ambiente onde o job será executado, 22 para não ocorrer surpresas de atualização.
+
+    outputs:
+      new_version_published: ${{ steps.versioning.outputs.new_version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org/' 
+
+      - name: Install dependencies
+        run: npm ci 
+
+      - name: Run tests
+        # Executa os testes definidos no projeto antes de publicar
+        run: npm test
+
+      - name: Configure Git for npm version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine version bump and publish
+        id: versioning 
+        run: | 
+          npm version patch -m "Release: %s" || { echo "::error::npm version failed"; exit 1; }
+          
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV # Exporta para variáveis de ambiente
+          # Exporta a nova versão como um output do passo, que será um output do job.
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT" 
+          npm publish || { echo "::error::npm publish failed"; exit 1; }
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push new version tag and package.json changes
+        run: | 
+          git push --tags
+          git push origin main
+
+  
+  notify-discord:
+    runs-on: ubuntu-latest
+    needs: publish # Este job depende do job 'publish' para ser executado.
+    
+    if: always() 
+
+    steps:
+      - name: Install JQ for JSON parsing (if not present)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Send notification to Discord
+        run: |
+          JOB_STATUS="${{ needs.publish.result }}"
+          
+          TITLE=""
+          DESCRIPTION=""
+          COLOR=""
+          NEW_VERSION_VALUE=""
+
+          if [ "$JOB_STATUS" == "success" ]; then
+            TITLE="✅ Publicação NPM SUCESSO!"
+            DESCRIPTION="A biblioteca \`andes-lib\` foi publicada com sucesso no npm."
+            COLOR=3066993 # Verde
+            NEW_VERSION_VALUE="${{ needs.publish.outputs.new_version_published }}"
+          else
+            TITLE="❌ Publicação NPM FALHA!"
+            DESCRIPTION="Houve um erro ao tentar publicar a biblioteca \`andes-lib\` no npm. Verifique os logs do workflow para detalhes."
+            COLOR=15158332 # Vermelho
+            NEW_VERSION_VALUE="N/A" 
+          fi
+
+          FIELDS='[]'
+
+          if [ "$JOB_STATUS" == "success" ]; then
+            FIELDS=$(echo "$FIELDS" | jq --argjson field '{"name": "Nova Versão", "value": "v'"$NEW_VERSION_VALUE"'", "inline": true}' '. += [$field]')
+            FIELDS=$(echo "$FIELDS" | jq --argjson field '{"name": "Link NPM", "value": "https://www.npmjs.com/package/andes-lib", "inline": true}' '. += [$field]')
+          fi
+          
+          FIELDS=$(echo "$FIELDS" | jq --argjson field '{"name": "Status Final do Job", "value": "'"$JOB_STATUS"'", "inline": true}' '. += [$field]')
+          
+          WORKFLOW_LINK="[${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          FIELDS=$(echo "$FIELDS" | jq --argjson field '{"name": "Workflow", "value": "'"$WORKFLOW_LINK"'", "inline": true}' '. += [$field]')
+
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{
+            "username": "NPM Publisher",
+            "avatar_url": "https://avatars.githubusercontent.com/in/15368?s=200&v=4",
+            "embeds": [
+              {
+                "title": "'"${TITLE}"'",
+                "description": "'"${DESCRIPTION}"'",
+                "color": '"${COLOR}"',
+                "fields": '"${FIELDS}"',
+                "footer": {
+                  "text": "Executado por: ${{ github.actor }}",
+                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                },
+                "timestamp": "${{ github.event.head_commit.timestamp }}"
+              }
+            ]
+          }' ${{ secrets.DISCORD_WEBHOOK_URL }}
