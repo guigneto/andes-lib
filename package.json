@@ -53,12 +53,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/IreneSchmidt/andes-lib"
+    "url": "git+https://github.com/guigneto/andes-lib.git"
   },
   "bugs": {
-    "url": "https://github.com/IreneSchmidt/andes-lib/issues"
+    "url": "https://github.com/guigneto/andes-lib/issues"
   },
-  "homepage": "https://github.com/IreneSchmidt/andes-lib#readme",
+  "homepage": "https://github.com/guigneto/andes-lib#readme",
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.17",
