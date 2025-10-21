@@ -1,0 +1,35 @@
+Configuration {
+    software_name: "Test Andes"
+    about: "Test Andes"
+    language: nodefined
+}
+module ModuloTeste
+        {
+
+
+        }
+module undefined
+        {
+          entity Pessoa {
+  nome: string,idade: integer,correiovirtual: email
+  enumatribute uses EnumName
+
+  outro ManyToMany PNC
+
+}
+
+  entity PNC {
+  nome: string,idade: integer,correiovirtual: email,identificacao: cpf
+
+
+
+
+}
+
+        enum EnumName{
+    enumerate1
+    enumerate2
+    enumerate3
+}
+
+        }

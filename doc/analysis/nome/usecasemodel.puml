@@ -1,0 +1,13 @@
+@startuml UseCaseDiagram
+' Definindo atores
+
+
+' Caso de uso principal
+usecase (Teste) as "Teste"
+
+' Relações entre atores e caso de uso
+
+
+' Dependências de outros casos de uso
+
+@enduml

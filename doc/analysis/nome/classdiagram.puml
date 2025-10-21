@@ -1,0 +1,27 @@
+@startuml
+    enum EnumName {
+         enumerate1
+        enumerate2
+        enumerate3
+    }
+    class Pessoa {
+    string: nome
+    integer: idade
+    email: correiovirtual
+
+    }
+
+    Pessoa "1" -- "1" EnumName : enumatribute>
+    Pessoa "0..*" -- "0..*" PNC : outro >
+
+    class PNC {
+    string: nome
+    integer: idade
+    email: correiovirtual
+    cpf: identificacao
+
+    }
+
+
+
+@enduml
