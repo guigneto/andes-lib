@@ -15,7 +15,8 @@ export * from "./model/made/SprintTypes.d"
 export * from "./model/spark/EntityTypes.d"
 export * from "./model/spark/EnumTypes.d"
 export * from "./model/spark/PackageTypes.d"
-
+export * from "./application/ClassDiagramCreator"
+export { default as ClassDiagramCreator } from "./application/ClassDiagramCreator"
 
 export { default as ApplicationCreator } from "./application/ApplicationCreator"
 

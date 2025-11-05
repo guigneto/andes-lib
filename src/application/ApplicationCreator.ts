@@ -1,6 +1,7 @@
 import { PathLike } from "fs"
 import createFolderAndFile from "./IO";
 import { DocusaurusProjectCreator } from "./DocusaurusCreator";
+import ClassDiagramCreator from "./ClassDiagramCreator";
 import { ProjectModuleType, ProjectType } from "../model/andes/ProjectTypes";
 import SparkFileRender from "../renders/dsl/spark/SparkFileRender";
 import MadeFileRender from "../renders/dsl/made/MadeFileRender";
@@ -21,7 +22,14 @@ export default class ApplicationCreator
     {
         this.createSpark();
         this.createDocusaurus();
+        this.createClassDiagrams();
         this.createMade();
+    }
+
+    private createClassDiagrams(): void
+    {
+        const creator = new ClassDiagramCreator(this.project, `${this.targetFolder}`);
+        creator.create();
     }
 
     private createSpark(): void
@@ -50,4 +58,3 @@ export default class ApplicationCreator
         createFolderAndFile(`${this.targetFolder}`, `${module.identifier}.made`, made.render());
     }
 }
-
